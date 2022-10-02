@@ -1,6 +1,6 @@
 #ifndef HEADER_H_INCLUDED
 #define HEADER_H_INCLUDED
-
+#define VARLEN 256 // maximum length of variable name
 /******************************************************************************************************************************************
     All enumeration literals
        TokenType : Specify the type of the token scanner returns
@@ -38,7 +38,7 @@ typedef struct Token{
 /* For decl production or say one declaration statement */
 typedef struct Declaration{
     DataType type;
-    char name;
+    char name[VARLEN];
 }Declaration;
 
 /* 
@@ -56,7 +56,7 @@ typedef struct Declarations{
 typedef struct Value{
     ValueType type;
     union{
-        char id;                   /* if the node represent the access of the identifier */
+        char id[VARLEN];                   /* if the node represent the access of the identifier */
         Operation op;              /* store +, -, *, /, =, type_convert */
         int ivalue;                /* for integer constant in the expression */
         float fvalue;              /* for float constant */
@@ -79,7 +79,7 @@ typedef struct Expression{
 
 /* For one assignment statement */
 typedef struct AssignmentStatement{
-    char id;
+    char id[VARLEN];
     Expression *expr;
     DataType type;      /* For type checking to store the type of all expression on the right. */
 }AssignmentStatement;
@@ -89,7 +89,7 @@ typedef struct AssignmentStatement{
 typedef struct Statement{
     StmtType type;
     union{
-        char variable;              /* print statement */
+        char variable[VARLEN];              /* print statement */
         AssignmentStatement assign;
     }stmt;
 }Statement;
@@ -106,9 +106,15 @@ typedef struct Program{
     Statements *statements;
 }Program;
 
+/* Entries of symbol table */
+typedef struct Symbol{
+    char id[VARLEN];
+    DataType type;
+}Symbol;
 /* For building the symbol table */
 typedef struct SymbolTable{
-    DataType table[26];
+    int top;
+    Symbol table[26];
 } SymbolTable;
 
 
@@ -122,26 +128,26 @@ Expression *parseValue( FILE *source );
 Expression *parseMulDivExpression( FILE *source, Expression *lvalue);
 Expression *parseExpressionTail( FILE *source, Expression *lvalue );
 Expression *parseExpression( FILE *source, Expression *lvalue );
-Statement makeAssignmentNode( char id, Expression *v, Expression *expr_tail );
-Statement makePrintNode( char id );
+Statement makeAssignmentNode( char *id, Expression *v, Expression *expr_tail );
+Statement makePrintNode( char *id );
 Statements *makeStatementTree( Statement stmt, Statements *stmts );
 Statement parseStatement( FILE *source, Token token );
 Statements *parseStatements( FILE * source );
 Program parser( FILE *source );
 void InitializeTable( SymbolTable *table );
-void add_table( SymbolTable *table, char c, DataType t );
+void add_table( SymbolTable *table, char *id, DataType t );
 SymbolTable build( Program program );
 void convertType( Expression * old, DataType type );
 DataType generalize( Expression *left, Expression *right );
-DataType lookup_table( SymbolTable *table, char c );
+DataType lookup_table( SymbolTable *table, char *id );
 void checkexpression( Expression * expr, SymbolTable * table );
 void checkstmt( Statement *stmt, SymbolTable * table );
 void check( Program *program, SymbolTable * table);
 void fprint_op( FILE *target, ValueType op );
-void fprint_expr( FILE *target, Expression *expr );
-void gencode( Program prog, FILE * target );
-void print_expr( Expression *expr );
-void test_parser( FILE *source );
+void fprint_expr( FILE *target, Expression *expr, SymbolTable *table );
+void gencode( Program prog, FILE * target, SymbolTable *table );
+void print_expr( Expression *expr, SymbolTable *table );
+void test_parser( FILE *source, SymbolTable *add_table );
 void ungetToken(char* tok, FILE *source);
 
 #endif // HEADER_H_INCLUDED

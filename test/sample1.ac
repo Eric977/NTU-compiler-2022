@@ -1,0 +1,7 @@
+f aa
+i bb
+f cc
+aa = 1
+bb = 2
+cc = aa + bb
+p cc
