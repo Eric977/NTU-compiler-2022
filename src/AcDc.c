@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "header.h"
-
+#define MAXNAMESIZE 256
 
 int main( int argc, char *argv[] )
 {
@@ -101,8 +101,16 @@ Token scanner( FILE *source )
                 token.type = IntegerDeclaration;
             else if( c == 'p' )
                 token.type = PrintOp;
-            else
+            else{
+                int i = 0;
+                while(islower(c)){
+                    token.tok[i++] = c;
+                    c = fgetc(source);
+                }
+                ungetc(c, source);
+                token.tok[i] = '\0';
                 token.type = Alphabet;
+            }
             return token;
         }
 
@@ -172,10 +180,11 @@ Declarations *parseDeclarations( FILE *source )
             decl = parseDeclaration(source, token);
             decls = parseDeclarations(source);
             return makeDeclarationTree( decl, decls );
-        case PrintOp:
         case Alphabet:
-            ungetc(token.tok[0], source);
+            //ungetc(token.tok[0], source);
+            ungetToken(token.tok, source);
             return NULL;
+        case PrintOp:
         case EOFsymbol:
             return NULL;
         default:
@@ -211,6 +220,41 @@ Expression *parseValue( FILE *source )
     return value;
 }
 
+Expression *parseMulDivExpression( FILE *source, Expression *lvalue)
+{
+    Expression *expr;
+    Token token = scanner(source);
+    switch(token.type){
+        case MulOp:
+            expr = (Expression *) malloc ( sizeof(Expression));
+            (expr->v).type = MulNode;
+            (expr->v).val.op = Mul;
+            expr->leftOperand = lvalue;
+            expr -> rightOperand = parseValue(source);
+            return parseMulDivExpression(source, expr);
+        case DivOp:
+            expr = (Expression *) malloc ( sizeof(Expression));
+            (expr->v).type = DivNode;
+            (expr->v).val.op = Div;
+            expr->leftOperand = lvalue;
+            expr -> rightOperand = parseValue(source);
+            return parseMulDivExpression(source, expr);
+        case Alphabet:
+            ungetToken(token.tok, source);
+            return lvalue;
+        case PlusOp:
+        case MinusOp:
+        case PrintOp:
+            ungetc(token.tok[0], source);
+            return lvalue;
+        case EOFsymbol:
+            return lvalue;
+        default:
+            printf("Syntax Error: Expect a numeric value or an identifier %s\n", token.tok);
+            exit(1);
+    }
+    
+}
 Expression *parseExpressionTail( FILE *source, Expression *lvalue )
 {
     Token token = scanner(source);
@@ -222,16 +266,32 @@ Expression *parseExpressionTail( FILE *source, Expression *lvalue )
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
+            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
             return parseExpressionTail(source, expr);
         case MinusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
+            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
+            return parseExpressionTail(source, expr);
+        case MulOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = MulNode;
+            (expr->v).val.op = Mul;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail(source, expr);
+        case DivOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = DivNode;
+            (expr->v).val.op = Div;
+            expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
             return parseExpressionTail(source, expr);
         case Alphabet:
+            ungetToken(token.tok, source);
+            return lvalue;
         case PrintOp:
             ungetc(token.tok[0], source);
             return lvalue;
@@ -254,16 +314,32 @@ Expression *parseExpression( FILE *source, Expression *lvalue )
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
+            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
             return parseExpressionTail(source, expr);
         case MinusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
+            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
+            return parseExpressionTail(source, expr);
+        case MulOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = MulNode;
+            (expr->v).val.op = Mul;
+            expr->leftOperand = lvalue;
+            expr->rightOperand = parseValue(source);
+            return parseExpressionTail(source, expr);
+        case DivOp:
+            expr = (Expression *)malloc( sizeof(Expression) );
+            (expr->v).type = DivNode;
+            (expr->v).val.op = Div;
+            expr->leftOperand = lvalue;
             expr->rightOperand = parseValue(source);
             return parseExpressionTail(source, expr);
         case Alphabet:
+            ungetToken(token.tok, source);
+            return NULL;
         case PrintOp:
             ungetc(token.tok[0], source);
             return NULL;
@@ -573,6 +649,12 @@ void fprint_op( FILE *target, ValueType op )
         case PlusNode:
             fprintf(target,"+\n");
             break;
+        case MulNode:
+            fprintf(target, "*\n");
+            break;
+        case DivNode:
+            fprintf(target, "/\n");
+            break;
         default:
             fprintf(target,"Error in fprintf_op ValueType = %d\n",op);
             break;
@@ -720,4 +802,18 @@ void test_parser( FILE *source )
         stmts = stmts->rest;
     }
 
+}
+
+
+/******************************************
+   Some Utilities
+ ****************************************/
+
+void ungetToken(char* tok, FILE *source){
+    int i = 0;
+    while (tok[i] != '\0'){
+        ungetc(tok[i], source);
+        i ++;
+    }
+    return;
 }

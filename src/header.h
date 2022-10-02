@@ -119,6 +119,7 @@ Declarations *makeDeclarationTree( Declaration decl, Declarations *decls );
 Declaration parseDeclaration( FILE *source, Token token );
 Declarations *parseDeclarations( FILE *source );
 Expression *parseValue( FILE *source );
+Expression *parseMulDivExpression( FILE *source, Expression *lvalue);
 Expression *parseExpressionTail( FILE *source, Expression *lvalue );
 Expression *parseExpression( FILE *source, Expression *lvalue );
 Statement makeAssignmentNode( char id, Expression *v, Expression *expr_tail );
@@ -139,8 +140,8 @@ void check( Program *program, SymbolTable * table);
 void fprint_op( FILE *target, ValueType op );
 void fprint_expr( FILE *target, Expression *expr );
 void gencode( Program prog, FILE * target );
-
 void print_expr( Expression *expr );
 void test_parser( FILE *source );
+void ungetToken(char* tok, FILE *source);
 
 #endif // HEADER_H_INCLUDED
