@@ -110,6 +110,8 @@ Token scanner( FILE *source )
                 ungetc(c, source);
                 token.tok[i] = '\0';
                 token.type = Alphabet;
+                //printf("%s\n", token.tok);
+
             }
             return token;
         }
@@ -222,7 +224,8 @@ Expression *parseValue( FILE *source )
 
 Expression *parseMulDivExpression( FILE *source, Expression *lvalue)
 {
-    Expression *expr;
+    Expression *expr, *rvalue;
+    int type;
     Token token = scanner(source);
     switch(token.type){
         case MulOp:
@@ -230,14 +233,37 @@ Expression *parseMulDivExpression( FILE *source, Expression *lvalue)
             (expr->v).type = MulNode;
             (expr->v).val.op = Mul;
             expr->leftOperand = lvalue;
-            expr -> rightOperand = parseValue(source);
+            rvalue = parseValue(source);
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue * (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue * (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
+
             return parseMulDivExpression(source, expr);
         case DivOp:
             expr = (Expression *) malloc ( sizeof(Expression));
             (expr->v).type = DivNode;
             (expr->v).val.op = Div;
             expr->leftOperand = lvalue;
-            expr -> rightOperand = parseValue(source);
+            rvalue = parseValue(source);
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue / (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue / (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseMulDivExpression(source, expr);
         case Alphabet:
             ungetToken(token.tok, source);
@@ -258,36 +284,80 @@ Expression *parseMulDivExpression( FILE *source, Expression *lvalue)
 Expression *parseExpressionTail( FILE *source, Expression *lvalue )
 {
     Token token = scanner(source);
-    Expression *expr;
-
+    Expression *expr, *rvalue;
+    int type;
     switch(token.type){
         case PlusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue + (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue + (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case MinusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue - (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue - (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case MulOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MulNode;
             (expr->v).val.op = Mul;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue * (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue * (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case DivOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = DivNode;
             (expr->v).val.op = Div;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue / (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue / (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case Alphabet:
             ungetToken(token.tok, source);
@@ -306,36 +376,80 @@ Expression *parseExpressionTail( FILE *source, Expression *lvalue )
 Expression *parseExpression( FILE *source, Expression *lvalue )
 {
     Token token = scanner(source);
-    Expression *expr;
-
+    Expression *expr, *rvalue;
+    int type;
     switch(token.type){
         case PlusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = PlusNode;
             (expr->v).val.op = Plus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue + (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue + (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case MinusOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MinusNode;
             (expr->v).val.op = Minus;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseMulDivExpression(source, parseValue(source));
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue - (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue - (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case MulOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = MulNode;
             (expr->v).val.op = Mul;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue * (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue * (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case DivOp:
             expr = (Expression *)malloc( sizeof(Expression) );
             (expr->v).type = DivNode;
             (expr->v).val.op = Div;
             expr->leftOperand = lvalue;
-            expr->rightOperand = parseValue(source);
+            rvalue = parseMulDivExpression(source, parseValue(source));
+            expr->rightOperand = rvalue;
+            if ((type = canMerge(lvalue, rvalue))){
+                (expr->v).type = type;
+                switch (type){
+                case IntConst:
+                    (expr->v).val.ivalue = (lvalue->v).val.ivalue / (rvalue->v).val.ivalue; break;
+                case FloatConst:
+                    (expr->v).val.fvalue = (lvalue->v).val.fvalue / (rvalue->v).val.fvalue; break;                
+                }
+                freeChild(expr);
+            }
             return parseExpressionTail(source, expr);
         case Alphabet:
             ungetToken(token.tok, source);
@@ -825,10 +939,37 @@ void test_parser( FILE *source, SymbolTable* table )
  ****************************************/
 
 void ungetToken(char* tok, FILE *source){
-    int i = 0;
-    while (tok[i] != '\0'){
+    for (int i = strlen(tok) - 1; i >= 0; i --){
         ungetc(tok[i], source);
-        i ++;
     }
     return;
+}
+
+int canMerge(Expression *lvalue, Expression* rvalue){
+    if (!lvalue || !rvalue)
+        return 0;
+    if ((lvalue->v).type == IntConst && (rvalue->v).type == IntConst)
+        return IntConst;
+    if ((lvalue->v).type == FloatConst && (rvalue->v).type == FloatConst)
+        return FloatConst;
+    if ((lvalue->v).type == IntConst && (rvalue->v).type == FloatConst){
+        (lvalue->v).val.fvalue = (float)(lvalue->v).val.ivalue;
+        return FloatConst;
+    }
+    if ((lvalue->v).type == FloatConst && (rvalue->v).type == IntConst){
+        (rvalue->v).val.fvalue = (float)(rvalue->v).val.ivalue;
+        return FloatConst;
+    }
+    return 0;
+}
+
+void freeChild(Expression *expr){
+    if (expr->leftOperand){
+        free(expr->leftOperand);
+        expr->leftOperand = NULL;
+    }
+    if (expr->rightOperand){
+        free(expr->rightOperand);
+        expr->rightOperand = NULL;
+    }
 }

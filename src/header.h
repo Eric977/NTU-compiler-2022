@@ -1,6 +1,6 @@
 #ifndef HEADER_H_INCLUDED
 #define HEADER_H_INCLUDED
-#define VARLEN 256 // maximum length of variable name
+#define VARLEN 257 // maximum length of variable name
 /******************************************************************************************************************************************
     All enumeration literals
        TokenType : Specify the type of the token scanner returns
@@ -149,5 +149,8 @@ void gencode( Program prog, FILE * target, SymbolTable *table );
 void print_expr( Expression *expr, SymbolTable *table );
 void test_parser( FILE *source, SymbolTable *add_table );
 void ungetToken(char* tok, FILE *source);
+int canMerge(Expression *lvalue, Expression* rvalue);
+void freeChild(Expression *expr);
+
 
 #endif // HEADER_H_INCLUDED
