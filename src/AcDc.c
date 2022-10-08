@@ -3,7 +3,6 @@
 #include <ctype.h>
 #include <string.h>
 #include "header.h"
-#define MAXNAMESIZE 256
 
 int main( int argc, char *argv[] )
 {
