@@ -81,7 +81,7 @@ Token getNumericToken( FILE *source, char c )
 
 Token scanner( FILE *source )
 {
-    char c;
+    char c, nextc;
     Token token;
 
     while( !feof(source) ){
@@ -95,27 +95,31 @@ Token scanner( FILE *source )
         token.tok[0] = c;
         token.tok[1] = '\0';
         if( islower(c) ){
-            if( c == 'f' )
-                token.type = FloatDeclaration;
-            else if( c == 'i' )
-                token.type = IntegerDeclaration;
-            else if( c == 'p' )
-                token.type = PrintOp;
-            else{
-                int i = 0;
-                while(islower(c)){
-                    token.tok[i++] = c;
-                    c = fgetc(source);
+            nextc = fgetc(source);
+            if (isspace(nextc)){
+                if( c == 'f')
+                    token.type = FloatDeclaration;
+                else if( c == 'i' )
+                    token.type = IntegerDeclaration;
+                else if( c == 'p' )
+                    token.type = PrintOp;
+                else{
+                    token.type = Alphabet;
                 }
-                ungetc(c, source);
+                ungetc(nextc, source);
+            }
+            else{
+                int i = 1;
+                while(!isspace(nextc)){
+                    token.tok[i++] = nextc;
+                    nextc = fgetc(source);
+                }
+                ungetc(nextc, source);
                 token.tok[i] = '\0';
                 token.type = Alphabet;
-                //printf("%s\n", token.tok);
-
             }
             return token;
         }
-
         switch(c){
             case '=':
                 token.type = AssignmentOp;
