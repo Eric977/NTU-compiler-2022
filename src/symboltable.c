@@ -6,9 +6,10 @@
 #include"header.h"
 
 #define TABLE_SIZE	256
-
+#define ID_LENGTH   64
 symtab * hash_table[TABLE_SIZE];
 extern int linenumber;
+extern int IDcount;
 
 int HASH(char * str){
 	int idx=0;
@@ -78,12 +79,36 @@ void printSymTab()
     for (i=0; i<TABLE_SIZE; i++)
     {
         symtab* symptr;
-	symptr = hash_table[i];
-	while (symptr != NULL)
-	{
-            printf("====>  index = %d \n", i);
-	    printSym(symptr);
-	    symptr=symptr->front;
-	}
+	    symptr = hash_table[i];
+        while (symptr != NULL)
+        {
+                printf("====>  index = %d \n", i);
+            printSym(symptr);
+            symptr=symptr->front;
+        }
+    }
+}
+
+int compare(const void* a, const void* b){
+    symtab** x = (symtab**) a;
+    symtab** y = (symtab**) b;
+    return (strcmp((*x)->lexeme, (*y)->lexeme));
+}
+
+void printIdFrequency(){
+    printf("\nFrequency of identifiers:\n");
+    int cnt = 0;
+    symtab* symEntry[IDcount];
+    for (int i = 0; i < TABLE_SIZE; i ++){
+        symtab* symptr;
+        symptr = hash_table[i];
+        while(symptr != NULL){
+            symEntry[cnt++] = symptr; 
+            symptr = symptr->front;
+        }
+    }
+    qsort(symEntry, cnt, sizeof(symtab*), compare);
+    for (int i = 0; i < cnt; i ++){
+        printf("%-64s   %d\n", symEntry[i]->lexeme, symEntry[i]->counter);
     }
 }
